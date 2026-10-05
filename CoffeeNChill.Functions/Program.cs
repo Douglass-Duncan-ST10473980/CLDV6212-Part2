@@ -1,6 +1,7 @@
-//Author: Tahir Ismail , Douglass Duncan, Neha
+//Author: Tahir Ismail , Douglass Duncan, Neha Heeralal
 using Azure.Monitor.OpenTelemetry.Exporter;
 using CoffeeNChill.Functions.Services;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +10,7 @@ using Microsoft.Extensions.Logging;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
-builder.ConfigureFunctionsWebApplication();
-
+// Register MenuStorageService with logger support
 builder.Services.AddSingleton<MenuStorageService>(serviceProvider =>
 {
     string connectionString =
@@ -23,6 +23,19 @@ builder.Services.AddSingleton<MenuStorageService>(serviceProvider =>
     return new MenuStorageService(connectionString, logger);
 });
 
+// Register OrderStorageService with logger support
+builder.Services.AddSingleton<OrderStorageService>(serviceProvider =>
+{
+    string connectionString =
+        Environment.GetEnvironmentVariable("AzureWebJobsStorage")
+        ?? "UseDevelopmentStorage=true";
+
+    var logger =
+        serviceProvider.GetRequiredService<ILogger<OrderStorageService>>();
+
+    return new OrderStorageService(connectionString, logger);
+});
+
 if (!string.IsNullOrEmpty(
         Environment.GetEnvironmentVariable(
             "APPLICATIONINSIGHTS_CONNECTION_STRING")))
@@ -31,5 +44,8 @@ if (!string.IsNullOrEmpty(
         .UseFunctionsWorkerDefaults()
         .UseAzureMonitorExporter();
 }
+
+
+builder.ConfigureFunctionsWebApplication();
 
 builder.Build().Run();

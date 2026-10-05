@@ -110,5 +110,30 @@ namespace CoffeeNChill.Functions.Functions
                 "Successfully processed order {OrderId} for customer {Customer}.",
                 order.OrderId, order.CustomerName);
         }
+
+        /// <summary>
+        /// Handles messages that have failed processing 5 times and been moved
+        /// to the poison queue (order-processing-queue-poison).
+        /// Logs them for manual investigation and prevents infinite retry loops.
+        /// </summary>
+        /// <param name="poisonMessage">The failed message from the poison queue.</param>
+        [Function("ProcessOrderQueuePoison")]
+        public void ProcessOrderQueuePoison(
+            [QueueTrigger("order-processing-queue-poison", Connection = "AzureWebJobsStorage")]
+            QueueMessage poisonMessage)
+        {
+            _logger.LogError(
+                "POISON MESSAGE received. MessageId: {MessageId}, DequeueCount: {DequeueCount}, Body: {Body}",
+                poisonMessage.MessageId,
+                poisonMessage.DequeueCount,
+                poisonMessage.MessageText);
+
+            // In a production system, you would typically:
+            //   1. Store this in a "FailedOrders" table for admin review
+            //   2. Send an alert email to the team
+            //   3. Provide a replay mechanism to retry after fixing the issue
+            //
+            // For this project, we log it clearly so it appears in Application Insights.
+        }
     }
 }

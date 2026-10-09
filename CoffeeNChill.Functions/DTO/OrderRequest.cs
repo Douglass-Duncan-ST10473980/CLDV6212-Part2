@@ -23,9 +23,5 @@ public class OrderRequest
     /// <example>COF-001, PAS-104</example>
     public List<string> SelectedItemSKUs { get; set; } = new();
 
-    /// <summary>
-    /// Gets or sets the total price of the order.
-    /// </summary>
-    /// <example>65.00</example>
-    public decimal TotalPrice { get; set; }
+
 }

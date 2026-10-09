@@ -1,4 +1,5 @@
-//Author: Tahir Ismail , Douglass Duncan, Neha
+// Authors: Tahir Ismail, Douglass Duncan (ST10473980), Neha
+
 using Azure.Monitor.OpenTelemetry.Exporter;
 using CoffeeNChill.Functions.Services;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -11,6 +12,7 @@ var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
 
+// Register the service responsible for accessing the MenuItems table.
 builder.Services.AddSingleton<MenuStorageService>(serviceProvider =>
 {
     string connectionString =
@@ -23,6 +25,9 @@ builder.Services.AddSingleton<MenuStorageService>(serviceProvider =>
     return new MenuStorageService(connectionString, logger);
 });
 
+// Register the service responsible for placing orders onto the
+// order-processing-queue.
+builder.Services.AddSingleton<OrderQueueService>();
 if (!string.IsNullOrEmpty(
         Environment.GetEnvironmentVariable(
             "APPLICATIONINSIGHTS_CONNECTION_STRING")))

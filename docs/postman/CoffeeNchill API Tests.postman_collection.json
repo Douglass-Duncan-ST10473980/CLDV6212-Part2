@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "424b5ecb-d398-4d26-bd11-10f0e249d6a1",
+    "_postman_id": "b05561b0-c38d-4a0e-a9a3-2d453196a5ea",
     "name": "CoffeeNchill API Tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "57316614"
@@ -224,7 +224,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 201\", function () {\n    pm.response.to.have.status(201);\n});\n\npm.test(\"Response confirms upload\", function () {\n    pm.expect(pm.response.text()).to.include(\"uploaded successfully\");\n});"
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response confirms upload\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"uploaded successfully\");",
+                  "});"
                 ]
               }
             }
@@ -232,18 +238,6 @@
           "request": {
             "method": "POST",
             "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": [
-                    "postman-cloud:///1f1af74c-dd98-4d90-a007-e0803d5fad86"
-                  ]
-                }
-              ]
-            },
             "url": {
               "raw": "{{baseUrl}}/documents/upload",
               "host": [
@@ -253,35 +247,15 @@
                 "documents",
                 "upload"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Download Staff Document",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Response has content\", function () {\n    pm.expect(pm.response.responseSize).to.be.greaterThan(0);\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/documents/download/Test File.pdf",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documents",
-                "download",
-                "Test File.pdf"
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
               ]
             }
           },
@@ -300,8 +274,7 @@
                   "});",
                   "",
                   "pm.test(\"Response is an array\", function () {",
-                  "    const data = pm.response.json();",
-                  "    pm.expect(data).to.be.an(\"array\");",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
                   "});"
                 ]
               }
@@ -317,6 +290,42 @@
               ],
               "path": [
                 "documents"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Staff Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has content\", function () {",
+                  "    pm.expect(pm.response.responseSize).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documents/download/PRSE6212Ea (1).pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "download",
+                "PRSE6212Ea (1).pdf"
               ]
             }
           },
@@ -539,96 +548,7 @@
           "response": []
         },
         {
-          "name": "Upload Document — No File Attached",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status code is 400\", function () {",
-                  "    pm.response.to.have.status(400);",
-                  "});",
-                  "",
-                  "pm.test(\"Error message indicates no file found\", function () {",
-                  "    pm.expect(pm.response.text()).to.include(\"No file was found\");",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "notes",
-                  "value": "test",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/documents/upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documents",
-                "upload"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Upload Document — Invalid Content-Type",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status code is 400\", function () {",
-                  "    pm.response.to.have.status(400);",
-                  "});",
-                  "",
-                  "pm.test(\"Error message indicates multipart requirement\", function () {",
-                  "    pm.expect(pm.response.text()).to.include(\"multipart/form-data\");",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"test\": \"value\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/documents/upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "documents",
-                "upload"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Download Document - Not Found",
+          "name": "Download Document — Not Found",
           "event": [
             {
               "listen": "test",
@@ -662,11 +582,532 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Upload Document — No File Attached",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message indicates no file found\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"No file was found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "notes",
+                  "value": "test",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Document — Invalid Content-Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message indicates multipart requirement\", function () {",
+                  "    pm.expect(pm.response.text()).to.include(\"multipart/form-data\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documents",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"test\": \"value\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — Missing Customer Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.error).to.include(\"CustomerName is required\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"\",\n  \"selectedItemSKUs\": [\"COF-001\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — Customer Name Too Short",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.error).to.include(\"at least 3 characters\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Al\",\n  \"selectedItemSKUs\": [\"COF-001\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — Customer Name Too Long",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.error).to.include(\"more than 40 characters\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Bartholomew Montgomery-Fitzgerald Vanderbilt\",\n  \"selectedItemSKUs\": [\"COF-001\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — No Items Selected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.error).to.include(\"At least one menu-item SKU is required\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Jane Smith\",\n  \"selectedItemSKUs\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — Empty SKU Value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.error).to.include(\"cannot contain empty values\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Jane Smith\",\n  \"selectedItemSKUs\": [\"COF-001\", \"\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — Unknown SKU",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.error).to.include(\"was not found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Jane Smith\",\n  \"selectedItemSKUs\": [\"XXX-999\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — Malformed JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.error).to.include(\"invalid JSON\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Jane Smith\",\n  \"selectedItemSKUs\": [\"COF-001\"\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "04 - Clean Up",
+      "name": "04 - Orders",
+      "item": [
+        {
+          "name": "Place Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 202 Accepted\", function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has the expected order fields\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data).to.have.property(\"message\");",
+                  "    pm.expect(data).to.have.property(\"orderId\");",
+                  "    pm.expect(data).to.have.property(\"status\");",
+                  "    pm.expect(data).to.have.property(\"totalPrice\");",
+                  "    pm.expect(data).to.have.property(\"orderTimestamp\");",
+                  "});",
+                  "",
+                  "pm.test(\"Order ID follows the ORD-YYYY-NNNN format\", function () {",
+                  "    pm.expect(pm.response.json().orderId).to.match(/^ORD-\\d{4}-\\d{4}$/);",
+                  "});",
+                  "",
+                  "pm.test(\"Order was placed on the queue\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Queued\");",
+                  "});",
+                  "",
+                  "pm.test(\"Total price was calculated by the server\", function () {",
+                  "    const total = pm.response.json().totalPrice;",
+                  "    pm.expect(total).to.be.a(\"number\");",
+                  "    pm.expect(total).to.be.above(0);",
+                  "});",
+                  "",
+                  "// Save the order ID so a later request can look up its status.",
+                  "pm.collectionVariables.set(\"lastOrderId\", pm.response.json().orderId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Jane Smith\",\n  \"selectedItemSKUs\": [\"COF-001\", \"CLD-001\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Places an order for the two drinks created in 01 - Menu. Run 01 - Menu first, because the server looks up each SKU's price in the MenuItems table."
+          },
+          "response": []
+        },
+        {
+          "name": "Place Order — Lowercase SKU Normalised",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 202 Accepted\", function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test(\"Lowercase SKU was accepted and queued\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Queued\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/queue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "queue"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Sipho Nkosi\",\n  \"selectedItemSKUs\": [\"cof-001\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Checks that SKUs are trimmed and converted to upper case before they are looked up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Clean Up",
       "item": [
         {
           "name": "Delete Hot Drink",
@@ -729,6 +1170,12 @@
           "response": []
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "lastOrderId",
+      "value": ""
     }
   ]
 }

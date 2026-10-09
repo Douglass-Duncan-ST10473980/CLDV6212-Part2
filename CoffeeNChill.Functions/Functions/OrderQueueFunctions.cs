@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Storage.Queues.Models;
@@ -6,7 +7,7 @@ using CoffeeNChill.Functions.Models;
 using CoffeeNChill.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-
+/// written by st10478910
 namespace CoffeeNChill.Functions.Functions
 {
     /// <summary>
@@ -16,7 +17,7 @@ namespace CoffeeNChill.Functions.Functions
     /// Flow:
     ///   1. A message arrives in the queue (produced by the Order Queue Producer API).
     ///   2. This function fires automatically with the message as a QueueMessage.
-    ///   3. The JSON payload is deserialized into an OrderRequest DTO.
+    ///   3. The JSON payload is deserialized into an OrderMessage DTO.
     ///   4. The order is validated and persisted to the Orders table with status "Received".
     ///   5. If deserialization or validation fails, the message moves to the poison queue.
     /// </summary>
@@ -25,15 +26,14 @@ namespace CoffeeNChill.Functions.Functions
         private readonly ILogger<OrderQueueFunctions> _logger;
         private readonly OrderStorageService _orderStorage;
 
+        // PropertyNameCaseInsensitive = true is REQUIRED so that camelCase JSON
+        // (orderId, customerName, selectedItemSKUs, ...) maps correctly to PascalCase properties.
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        /// <summary>
-        /// Constructor injects the logger and Orders storage service.
-        /// </summary>
         public OrderQueueFunctions(
             ILogger<OrderQueueFunctions> logger,
             OrderStorageService orderStorage)
@@ -46,7 +46,6 @@ namespace CoffeeNChill.Functions.Functions
         /// Triggered automatically when a message is added to "order-processing-queue".
         /// Parses the JSON, validates the order, and saves it to Table Storage.
         /// </summary>
-        /// <param name="message">The queue message containing the order JSON.</param>
         [Function("ProcessOrderQueue")]
         public async Task ProcessOrderQueue(
             [QueueTrigger("order-processing-queue", Connection = "AzureWebJobsStorage")]
@@ -56,50 +55,54 @@ namespace CoffeeNChill.Functions.Functions
                 "Received message from order-processing-queue. MessageId: {MessageId}, DequeueCount: {DequeueCount}",
                 message.MessageId, message.DequeueCount);
 
-            OrderRequest? request;
+            OrderMessage? orderMessage;
 
-            // Step 1: Try to deserialize the JSON message
+            // Step 1: Deserialize the JSON
             try
             {
-                request = JsonSerializer.Deserialize<OrderRequest>(message.MessageText, _jsonOptions);
+                orderMessage = JsonSerializer.Deserialize<OrderMessage>(message.MessageText, _jsonOptions);
             }
             catch (JsonException ex)
             {
                 _logger.LogError(ex,
                     "Failed to deserialize message {MessageId}. Moving to poison queue.",
                     message.MessageId);
-                throw; // Throwing causes the message to be retried and then poison-queued
+                throw;
             }
 
-            // Step 2: Validate the deserialized request
-            if (request == null)
+            // Step 2: Validate
+            if (orderMessage == null)
             {
-                _logger.LogError("Order request was null after deserialization. MessageId: {MessageId}",
+                _logger.LogError("Order message was null after deserialization. MessageId: {MessageId}",
                     message.MessageId);
-                throw new InvalidOperationException("Order request was null.");
+                throw new InvalidOperationException("Order message was null.");
             }
 
-            if (string.IsNullOrWhiteSpace(request.CustomerName) ||
-                string.IsNullOrWhiteSpace(request.CustomerPhone) ||
-                request.Items == null ||
-                request.Items.Count == 0)
+            if (string.IsNullOrWhiteSpace(orderMessage.OrderId) ||
+                string.IsNullOrWhiteSpace(orderMessage.CustomerName) ||
+                orderMessage.SelectedItemSKUs == null ||
+                orderMessage.SelectedItemSKUs.Count == 0)
             {
                 _logger.LogError(
-                    "Invalid order data received. CustomerName: {CustomerName}, Items count: {ItemCount}",
-                    request.CustomerName, request.Items?.Count ?? 0);
-                throw new InvalidOperationException("Order request failed validation.");
+                    "Invalid order data received. OrderId: {OrderId}, CustomerName: {CustomerName}, SKU count: {SkuCount}",
+                    orderMessage.OrderId, orderMessage.CustomerName,
+                    orderMessage.SelectedItemSKUs?.Count ?? 0);
+                throw new InvalidOperationException("Order message failed validation.");
             }
 
-            // Step 3: Map to the Order entity and persist to Table Storage
-            var order = new Order
+            // Step 3: Map to OrderEntity and persist
+            var order = new OrderEntity
             {
-                OrderId = $"ORD-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
-                CustomerName = request.CustomerName.Trim(),
-                CustomerPhone = request.CustomerPhone.Trim(),
-                ItemsJson = JsonSerializer.Serialize(request.Items, _jsonOptions),
-                TotalPrice = request.TotalPrice,
-                Notes = request.Notes?.Trim() ?? string.Empty,
+                // PartitionKey = OrderDate (yyyy-MM-dd)
+                PartitionKey = orderMessage.OrderTimestamp.UtcDateTime.ToString("yyyy-MM-dd"),
+                // RowKey = OrderId
+                RowKey = orderMessage.OrderId,
+                OrderId = orderMessage.OrderId,
+                CustomerName = orderMessage.CustomerName.Trim(),
+                SelectedItemSKUs = string.Join(",", orderMessage.SelectedItemSKUs),
+                TotalPrice = orderMessage.TotalPrice,
                 Status = OrderStatus.Received.ToString(),
+                OrderTimestamp = orderMessage.OrderTimestamp,
                 ReceivedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
             };
@@ -114,9 +117,7 @@ namespace CoffeeNChill.Functions.Functions
         /// <summary>
         /// Handles messages that have failed processing 5 times and been moved
         /// to the poison queue (order-processing-queue-poison).
-        /// Logs them for manual investigation and prevents infinite retry loops.
         /// </summary>
-        /// <param name="poisonMessage">The failed message from the poison queue.</param>
         [Function("ProcessOrderQueuePoison")]
         public void ProcessOrderQueuePoison(
             [QueueTrigger("order-processing-queue-poison", Connection = "AzureWebJobsStorage")]
@@ -127,13 +128,6 @@ namespace CoffeeNChill.Functions.Functions
                 poisonMessage.MessageId,
                 poisonMessage.DequeueCount,
                 poisonMessage.MessageText);
-
-            // In a production system, you would typically:
-            //   1. Store this in a "FailedOrders" table for admin review
-            //   2. Send an alert email to the team
-            //   3. Provide a replay mechanism to retry after fixing the issue
-            //
-            // For this project, we log it clearly so it appears in Application Insights.
         }
     }
 }

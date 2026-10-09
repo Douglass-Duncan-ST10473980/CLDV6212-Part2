@@ -5,13 +5,17 @@ using Azure;
 using Azure.Data.Tables;
 using CoffeeNChill.Functions.Models;
 using Microsoft.Extensions.Logging;
-
+/// written by st10478910
 namespace CoffeeNChill.Functions.Services
 {
     /// <summary>
     /// Data access layer for the "Orders" table in Azure Table Storage.
-    /// Handles creating orders, retrieving them by ID or customer, and updating
+    /// Handles creating orders, retrieving them by ID or status, and updating
     /// their status as they move through the lifecycle (Received → Preparing → Ready → Collected).
+    ///
+    /// Table design:
+    ///   PartitionKey = OrderDate (yyyy-MM-dd)
+    ///   RowKey       = OrderId (e.g., "ORD-2026-8801")
     /// </summary>
     public class OrderStorageService
     {
@@ -22,8 +26,6 @@ namespace CoffeeNChill.Functions.Services
         /// <summary>
         /// Initializes the service and ensures the "Orders" table exists.
         /// </summary>
-        /// <param name="connectionString">Azure Storage connection string (Azurite or real Azure).</param>
-        /// <param name="logger">Optional logger for diagnostics.</param>
         public OrderStorageService(string connectionString, ILogger<OrderStorageService>? logger = null)
         {
             _logger = logger;
@@ -46,13 +48,10 @@ namespace CoffeeNChill.Functions.Services
         /// Creates a new order record in the Orders table.
         /// Called after a message is received from the order-processing-queue.
         /// </summary>
-        /// <param name="order">The order entity to persist.</param>
-        /// <returns>The persisted order with its generated identifiers.</returns>
-        public async Task<Order> CreateOrderAsync(Order order)
+        public async Task<OrderEntity> CreateOrderAsync(OrderEntity order)
         {
             try
             {
-                // Ensure the initial status is "Received"
                 if (string.IsNullOrWhiteSpace(order.Status))
                 {
                     order.Status = OrderStatus.Received.ToString();
@@ -64,8 +63,8 @@ namespace CoffeeNChill.Functions.Services
                 await _tableClient.AddEntityAsync(order);
 
                 _logger?.LogInformation(
-                    "Created order {OrderId} ({RowKey}) for customer {Customer}",
-                    order.OrderId, order.RowKey, order.CustomerName);
+                    "Created order {OrderId} ({PartitionKey}/{RowKey}) for customer {Customer}",
+                    order.OrderId, order.PartitionKey, order.RowKey, order.CustomerName);
 
                 return order;
             }
@@ -83,21 +82,27 @@ namespace CoffeeNChill.Functions.Services
         }
 
         /// <summary>
-        /// Retrieves a single order by its unique OrderId (stored in the RowKey).
-        /// Returns null if the order is not found.
+        /// Retrieves a single order by its OrderId (RowKey).
+        /// Because PartitionKey = OrderDate, this method queries across ALL partitions
+        /// and filters by RowKey. If you know the OrderDate, use GetOrderByIdAsync(orderDate, orderId)
+        /// instead for a faster point lookup.
         /// </summary>
-        /// <param name="orderId">The order's unique GUID identifier (RowKey).</param>
+        /// <param name="orderId">The order's unique identifier (RowKey).</param>
         /// <returns>The matching order, or null if not found.</returns>
-        public async Task<Order?> GetOrderByIdAsync(string orderId)
+        public async Task<OrderEntity?> GetOrderByIdAsync(string orderId)
         {
             try
             {
-                var response = await _tableClient.GetEntityAsync<Order>("Order", orderId);
-                _logger?.LogInformation("Retrieved order {OrderId}.", orderId);
-                return response.Value;
-            }
-            catch (RequestFailedException ex) when (ex.Status == 404)
-            {
+                // Scan across all partitions filtering by RowKey.
+                // This is acceptable for a demo project; in production you would
+                // store the OrderDate and do a point lookup.
+                await foreach (var order in _tableClient.QueryAsync<OrderEntity>(
+                    filter: o => o.RowKey == orderId))
+                {
+                    _logger?.LogInformation("Retrieved order {OrderId}.", orderId);
+                    return order;
+                }
+
                 _logger?.LogInformation("Order {OrderId} not found.", orderId);
                 return null;
             }
@@ -109,16 +114,43 @@ namespace CoffeeNChill.Functions.Services
         }
 
         /// <summary>
-        /// Retrieves all orders in the table. Useful for admin dashboards
-        /// that need to display the full order list.
+        /// Fast point-lookup when you know both the OrderDate (PartitionKey) and OrderId (RowKey).
         /// </summary>
-        /// <returns>A list of all orders in storage.</returns>
-        public async Task<List<Order>> GetAllOrdersAsync()
+        /// <param name="orderDate">Order date in "yyyy-MM-dd" format.</param>
+        /// <param name="orderId">The order's unique identifier (RowKey).</param>
+        /// <returns>The matching order, or null if not found.</returns>
+        public async Task<OrderEntity?> GetOrderByIdAsync(string orderDate, string orderId)
         {
-            var results = new List<Order>();
             try
             {
-                await foreach (var order in _tableClient.QueryAsync<Order>(_ => true))
+                var response = await _tableClient.GetEntityAsync<OrderEntity>(orderDate, orderId);
+                _logger?.LogInformation(
+                    "Retrieved order {OrderId} from partition {PartitionKey}.", orderId, orderDate);
+                return response.Value;
+            }
+            catch (RequestFailedException ex) when (ex.Status == 404)
+            {
+                _logger?.LogInformation(
+                    "Order {OrderId} not found in partition {PartitionKey}.", orderId, orderDate);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex,
+                    "Error retrieving order {OrderId} from partition {PartitionKey}.", orderId, orderDate);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Retrieves all orders across every partition (every date).
+        /// </summary>
+        public async Task<List<OrderEntity>> GetAllOrdersAsync()
+        {
+            var results = new List<OrderEntity>();
+            try
+            {
+                await foreach (var order in _tableClient.QueryAsync<OrderEntity>(_ => true))
                 {
                     results.Add(order);
                 }
@@ -135,19 +167,16 @@ namespace CoffeeNChill.Functions.Services
         }
 
         /// <summary>
-        /// Retrieves all orders that currently have a specific status
-        /// (e.g., all orders that are "Ready" for collection).
+        /// Retrieves all orders with a specific status (e.g., all "Ready" orders).
         /// </summary>
-        /// <param name="status">The status to filter by (use OrderStatus enum values).</param>
-        /// <returns>A list of orders matching the status.</returns>
-        public async Task<List<Order>> GetOrdersByStatusAsync(OrderStatus status)
+        public async Task<List<OrderEntity>> GetOrdersByStatusAsync(OrderStatus status)
         {
-            var results = new List<Order>();
+            var results = new List<OrderEntity>();
             var statusStr = status.ToString();
 
             try
             {
-                await foreach (var order in _tableClient.QueryAsync<Order>(
+                await foreach (var order in _tableClient.QueryAsync<OrderEntity>(
                     o => o.Status == statusStr))
                 {
                     results.Add(order);
@@ -168,13 +197,9 @@ namespace CoffeeNChill.Functions.Services
         }
 
         /// <summary>
-        /// Updates the status of an existing order and refreshes the LastUpdatedAt timestamp.
-        /// Used to transition orders through Received → Preparing → Ready → Collected.
+        /// Updates the status of an existing order and refreshes LastUpdatedAt.
         /// </summary>
-        /// <param name="orderId">The order's unique GUID identifier (RowKey).</param>
-        /// <param name="newStatus">The new status to apply.</param>
-        /// <returns>The updated order, or null if the order was not found.</returns>
-        public async Task<Order?> UpdateOrderStatusAsync(string orderId, OrderStatus newStatus)
+        public async Task<OrderEntity?> UpdateOrderStatusAsync(string orderId, OrderStatus newStatus)
         {
             try
             {

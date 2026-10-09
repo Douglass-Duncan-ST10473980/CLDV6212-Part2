@@ -4,19 +4,20 @@
 
 The **Order Queue Processor** is a queue-triggered Azure Function that handles incoming orders from the `order-processing-queue`. It validates the JSON payload, persists orders to the Azure `Orders` table, and manages their lifecycle through four statuses.
 
-**Author:** Neha
+**Author:** Neha Heeralal — ST10478910
 
 ---
 
 ## Architecture
 
-The processor is made up of four key components:
+The processor is made up of five key components:
 
 | File | Purpose |
 |------|---------|
-| `Models/Order.cs` | Entity stored in the Azure `Orders` table. Uses `PartitionKey = "Order"` and `RowKey = Guid` as the composite key. |
+| `Models/OrderEntity.cs` | Entity stored in the Azure `Orders` table. Uses `PartitionKey = OrderDate (yyyy-MM-dd)` and `RowKey = OrderId` as the composite key. |
 | `Models/OrderStatus.cs` | Enum defining the four lifecycle stages: `Received`, `Preparing`, `Ready`, `Collected`. |
-| `Services/OrderStorageService.cs` | Data access layer. Handles create, read, and status update operations against Table Storage. |
+| `DTO/OrderMessage.cs` | Data Transfer Object representing the queue message payload (matches the Producer's `Order` class exactly: `OrderId`, `CustomerName`, `SelectedItemSKUs`, `TotalPrice`, `OrderTimestamp`). |
+| `Services/OrderStorageService.cs` | Data access layer. Handles create, read, and status-update operations against Table Storage. |
 | `Functions/OrderQueueFunctions.cs` | Queue-triggered functions: `ProcessOrderQueue` and `ProcessOrderQueuePoison`. |
 | `Functions/OrderStatusFunctions.cs` | HTTP-triggered functions for viewing and updating order status via REST. |
 
@@ -31,7 +32,7 @@ Order Queue Producer (Role 1)
   POST /api/orders/queue
          │
          ▼
-  order-processing-queue
+  order-processing-queue (Base64-encoded JSON)
          │
          ▼
   ProcessOrderQueue (this role)
@@ -43,10 +44,24 @@ Order Queue Producer (Role 1)
   Status transitions via PUT /api/orders/{id}/status
 ```
 
-1. The Producer places a JSON message on the `order-processing-queue`.
-2. `ProcessOrderQueue` fires automatically, deserializes the JSON, and validates the order.
-3. If valid, the order is saved to the `Orders` table with status **Received**.
-4. If processing fails 5 times in a row, the message is moved to the **poison queue** and picked up by `ProcessOrderQueuePoison`.
+1. The Producer places a Base64-encoded JSON message on the `order-processing-queue`.
+2. `ProcessOrderQueue` fires automatically — the `QueueMessage` binding decodes Base64 transparently.
+3. The payload is deserialized into an `OrderMessage` DTO.
+4. If valid, the order is saved to the `Orders` table with status **Received**.
+5. If processing fails 5 times in a row, the message moves to the **poison queue** and is handled by `ProcessOrderQueuePoison`.
+
+---
+
+## Table Design
+
+The `Orders` table follows the brief's specification:
+
+| Key | Value | Example |
+|-----|-------|---------|
+| **PartitionKey** | OrderDate (`yyyy-MM-dd`) | `2026-10-09` |
+| **RowKey** | OrderId | `ORD-2026-8801` |
+
+This groups all orders placed on the same day into a single partition, which is efficient for daily reporting and dashboard queries.
 
 ---
 
@@ -56,10 +71,10 @@ Orders progress through exactly four states:
 
 | Status | Meaning |
 |--------|---------|
-| `Received` | The order has just been created and stored in the database. This is the initial state. |
+| `Received` | The order has been created and stored. Initial state for every new order. |
 | `Preparing` | Kitchen staff are actively preparing the order. |
-| `Ready` | The order is complete and waiting for the customer to collect it. |
-| `Collected` | The customer has picked up their order. This is the final state. |
+| `Ready` | The order is complete and waiting for customer collection. |
+| `Collected` | The customer has picked up their order. Final state. |
 
 Status updates are applied via `PUT /api/orders/{orderId}/status`.
 
@@ -76,7 +91,7 @@ Status updates are applied via `PUT /api/orders/{orderId}/status`.
 ### Example: Update Order Status
 
 ```http
-PUT /api/orders/{orderId}/status
+PUT /api/orders/ORD-2026-8801/status
 Content-Type: application/json
 
 {
@@ -88,35 +103,49 @@ Content-Type: application/json
 
 ---
 
+## JSON Deserialization Notes
+
+Two important details for correctly reading the Producer's message:
+
+1. **Base64 encoding** — Azure Queue Storage stores messages as Base64 by default. The `QueueMessage` binding decodes this automatically before deserialization, so no manual decoding is required.
+2. **camelCase JSON** — The Producer sends camelCase field names (`orderId`, `customerName`, `selectedItemSKUs`, etc.). We set `PropertyNameCaseInsensitive = true` in `JsonSerializerOptions` so these map correctly to the PascalCase C# properties. Without this, all fields would be empty and every message would end up in the poison queue.
+
+---
+
 ## Queue Triggers
 
 ### Main Queue: `order-processing-queue`
-Fires `ProcessOrderQueue` automatically when a message arrives. It:
-1. Deserializes the message body into an `OrderRequest` DTO.
-2. Validates that `CustomerName`, `CustomerPhone`, and `Items` are present.
-3. Maps the request to an `Order` entity with a generated `OrderId`.
+Fires `ProcessOrderQueue` when a message arrives. It:
+1. Deserializes the message body into an `OrderMessage` DTO.
+2. Validates that `OrderId`, `CustomerName`, and `SelectedItemSKUs` are present.
+3. Maps the message to an `OrderEntity` (using `OrderTimestamp` for PartitionKey and `OrderId` for RowKey).
 4. Saves it to the `Orders` table with status `Received`.
 
-If any step fails, an exception is thrown, causing Azure Functions to retry the message. After 5 failed attempts, the message is automatically moved to the poison queue.
+If any step fails, an exception is thrown. Azure Functions retries up to 5 times, then moves the message to the poison queue.
 
 ### Poison Queue: `order-processing-queue-poison`
-Fires `ProcessOrderQueuePoison` for messages that repeatedly failed. It logs the failure details (`MessageId`, `DequeueCount`, `Body`) so the team can investigate and manually replay if needed.
+Fires `ProcessOrderQueuePoison` for messages that repeatedly failed. It logs the failure details (`MessageId`, `DequeueCount`, `Body`) so the team can investigate and replay if needed.
 
 ---
 
 ## Validation Rules
 
-- `CustomerName` and `CustomerPhone` must not be empty.
-- `Items` must contain at least one item.
-- `Status` must be one of the four enum values.
+- `OrderId`, `CustomerName`, and `SelectedItemSKUs` must not be empty.
+- `SelectedItemSKUs` must contain at least one SKU.
+- Status updates must be one of the four enum values (`Received`, `Preparing`, `Ready`, `Collected`).
 
-Invalid messages are rejected and thrown as exceptions, which triggers the poison-queue flow.
+Invalid messages throw an exception, triggering the poison-queue flow.
 
 ---
 
 ## Testing
 
-A Postman collection is provided in `docs/postman/CoffeeNChill - Order Processor.postman_collection.json` and includes:
+A Postman collection is provided at:
+```
+docs/postman/CoffeeNChill - Order Processor.postman_collection.json
+```
+
+It includes:
 - **Get All Orders**
 - **Get Order by ID** (uses the `{{orderId}}` collection variable)
 - **Update Order Status**
@@ -132,7 +161,7 @@ Import the collection into Postman, set the `orderId` variable to a valid order,
    ```
    func start
    ```
-3. The queue trigger will automatically fire when messages are added to `order-processing-queue`.
+3. The queue trigger fires automatically when messages are added to `order-processing-queue`.
 
 ---
 

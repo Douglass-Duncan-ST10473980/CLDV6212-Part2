@@ -233,9 +233,9 @@ Record only verified results:
 
 | Team member | GitHub username | Meaningful commits | Evidence |
 |---|---|---:|---|
-| Neha — ST10478910 | nehaheeralal | 22 | [Neha Commits](https://github.com/EMGPSD/cldv6212-g2-2026-poe-part1-douglass-duncan-st10473980/commits/main/?author=nehaheeralal) |
-| Tahir — ST10471483 | tahir2404 | 14 | [Tahirs Commits](https://github.com/EMGPSD/cldv6212-g2-2026-poe-part1-douglass-duncan-st10473980/commits/main/?author=tahir2404) |
-| Douglass — ST10473980 | Douglass-Duncan-ST10473980 | 7 | [Douglass' Commits](https://github.com/EMGPSD/cldv6212-g2-2026-poe-part1-douglass-duncan-st10473980/commits/main/?author=Douglass-Duncan-ST10473980) |
+| Neha — ST10478910 | nehaheeralal | 11 | [Neha's commits](https://github.com/Douglass-Duncan-ST10473980/CLDV6212-Part2/commits/main/?author=nehaheeralal) |
+| Tahir — ST10471483 | tahir-ismail | 15 | [Tahir's commits](https://github.com/Douglass-Duncan-ST10473980/CLDV6212-Part2/commits/main/?author=tahir-ismail) |
+| Douglass — ST10473980 | Douglass-Duncan-ST10473980 | 11 | [Douglass' commits](https://github.com/Douglass-Duncan-ST10473980/CLDV6212-Part2/commits/main/?author=Douglass-Duncan-ST10473980) |
 
 Do not enter a count until it has been checked. Generic messages such as `fix` or `update` may not count as meaningful commits.
 

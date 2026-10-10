@@ -466,10 +466,10 @@ The drinks already exist from a previous run. Run `05 - Clean Up` first.
 Each member must review this section and correct any inaccurate details before submission.
 
 ## Part 2 verified Git commit history
-
+|---|---|---:|---|
 | Team member | GitHub username | Part 2 meaningful commits | Evidence |
 | Neha — ST10478910 | nehaheeralal | 11 | [Neha's commits](https://github.com/Douglass-Duncan-ST10473980/CLDV6212-Part2/commits/main/?author=nehaheeralal) |
-| Tahir — ST10471483 | tahir-ismail | 15 | [Tahir's commits](https://github.com/Douglass-Duncan-ST10473980/CLDV6212-Part2/commits/main/?author=tahir-ismail) |
+| Tahir — ST10471483 | tahir-ismail | 20 | [Tahir's commits](https://github.com/Douglass-Duncan-ST10473980/CLDV6212-Part2/commits/main/?author=tahir-ismail) |
 | Douglass — ST10473980 | Douglass-Duncan-ST10473980 | 11 | [Douglass' commits](https://github.com/Douglass-Duncan-ST10473980/CLDV6212-Part2/commits/main/?author=Douglass-Duncan-ST10473980) |
 
 ## Part 2 video walkthrough

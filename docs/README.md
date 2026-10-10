@@ -28,7 +28,7 @@ Azure Functions API
 
 Azurite container emulates Blob, Queue, and Table Storage locally.
 ```
-Main components~~~~
+Main components
 Menu HTTP Functions: Create, list, filter, update, and delete menu items.
 Document HTTP Functions: Upload, list, and download staff documents.
 MenuStorageService: Keeps Table Storage operations separate from HTTP handling.
@@ -194,7 +194,7 @@ Queue processor: `ProcessOrderQueue` triggers automatically for each queue messa
 Poison-queue handling: messages that fail five times move to `order-processing-queue-poison`, where `ProcessOrderQueuePoison` logs them.
 Order tracking endpoints: `GET /api/orders`, `GET /api/orders/{orderId}`, `PUT /api/orders/status` (move one step forward) and `PUT /api/orders/{orderId}/status` (set a specific status).
 Order lifecycle: Received → Preparing → Ready → Collected.
-Docker Compose: `docker-compose.yml` in the repository root orchestrates Azurite and the Functions host, pulls `st10473980/coffeenchill-functions:v2.0` from Docker Hub, and uses a custom bridge network and a persistent Azurite volume.
+Docker Compose: `docker-compose.yml` in the repository root orchestrates Azurite and the Functions host, pulls `tahirismail/coffeenchill-functions:v2.0` from Docker Hub, and uses a custom bridge network and a persistent Azurite volume.
 `.env.example`: documents the `FileShareStorage` setting so secrets stay out of the repository.
 Postman: a `04 - Orders` folder covering the full order flow, and order validation tests in `03 - Negative Tests`.
 Changed
@@ -235,7 +235,7 @@ SelectedItemSKUs	`COF-001,CLD-001`	Stored as a comma-separated string
 TotalPrice	`87.49`	Calculated by the server from menu prices
 Status	`Received`	Received → Preparing → Ready → Collected
 Part 2 Docker Hub image
-Repository: st10473980/coffeenchill-functions
+- Repository: [tahirismail/coffeenchill-functions](https://hub.docker.com/r/tahirismail/coffeenchill-functions)
 Version: `v2.0`
 Part 2 uses Microsoft's official `mcr.microsoft.com/azure-storage/azurite` image in Docker Compose, started with `--skipApiVersionCheck` (see Troubleshooting).
 Part 2 startup guide: Docker Compose (single command)
@@ -245,7 +245,7 @@ Start the full stack:
 ```bash
    docker-compose up
    ```
-Docker pulls `st10473980/coffeenchill-functions:v2.0` from Docker Hub, starts Azurite, and connects both containers on the `coffeenchill-network` bridge network.
+Docker pulls `tahirismail/coffeenchill-functions:v2.0` from Docker Hub, starts Azurite, and connects both containers on the `coffeenchill-network` bridge network.
 Set Postman's `baseUrl` to `http://localhost:7071/api`.
 Stop everything:
 ```bash
@@ -337,4 +337,4 @@ Unlisted YouTube video: `<ADD_PART_2_UNLISTED_YOUTUBE_URL>`
 Part 2 technologies
 Azure Queue Storage and Queue-triggered Azure Functions
 Docker Compose
-Azure Storage Explorer~~~~
+Azure Storage Explore

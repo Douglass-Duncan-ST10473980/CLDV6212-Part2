@@ -986,6 +986,218 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get Order — Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"not found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/ORD-0000-0000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "ORD-0000-0000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Advance Order — Missing Order ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"orderId field is required\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Advance Order — Unknown Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"not found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-0000-0000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Advance Order — Malformed JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"Invalid JSON\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-0000-0000\"\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order Status — Invalid Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"Invalid status\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/ORD-0000-0000/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "ORD-0000-0000",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Cooking\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -1073,7 +1285,10 @@
                   "",
                   "pm.test(\"Lowercase SKU was accepted and queued\", function () {",
                   "    pm.expect(pm.response.json().status).to.eql(\"Queued\");",
-                  "});"
+                  "});",
+                  "",
+                  "// Save this order ID for the \"Set Directly\" status test.",
+                  "pm.collectionVariables.set(\"secondOrderId\", pm.response.json().orderId);"
                 ]
               }
             }
@@ -1101,6 +1316,389 @@
               }
             },
             "description": "Checks that SKUs are trimmed and converted to upper case before they are looked up."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order — Status Received",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// The order is saved by ProcessOrderQueue in the background, a moment after",
+                  "// Place Order returns. Wait 3 seconds so the queue trigger has time to run.",
+                  "setTimeout(function () {}, 3000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Order status is Received\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Received\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response is for the order that was placed\", function () {",
+                  "    pm.expect(pm.response.json().orderId).to.eql(pm.collectionVariables.get(\"lastOrderId\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Saved with PartitionKey = order date and RowKey = order ID\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.partitionKey).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "    pm.expect(data.rowKey).to.eql(data.orderId);",
+                  "});",
+                  "",
+                  "pm.test(\"Order details were copied from the queue message\", function () {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data.customerName).to.eql(\"Jane Smith\");",
+                  "    pm.expect(data.selectedItemSKUs).to.include(\"COF-001\");",
+                  "    pm.expect(data.totalPrice).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{lastOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{lastOrderId}}"
+              ]
+            },
+            "description": "Proves the queue trigger picked up the order and saved it to the Orders table."
+          },
+          "response": []
+        },
+        {
+          "name": "Advance Order — Preparing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Order status is Preparing\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Preparing\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response is for the order that was placed\", function () {",
+                  "    pm.expect(pm.response.json().orderId).to.eql(pm.collectionVariables.get(\"lastOrderId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{lastOrderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Advance Order — Ready",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Order status is Ready\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Ready\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response is for the order that was placed\", function () {",
+                  "    pm.expect(pm.response.json().orderId).to.eql(pm.collectionVariables.get(\"lastOrderId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{lastOrderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Advance Order — Collected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Order status is Collected\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Collected\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response is for the order that was placed\", function () {",
+                  "    pm.expect(pm.response.json().orderId).to.eql(pm.collectionVariables.get(\"lastOrderId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{lastOrderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Advance Order — Already Collected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message explains the problem\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"already Collected\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{lastOrderId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "A collected order is the end of the lifecycle, so it cannot move any further."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order — Status Collected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Order status is Collected\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Collected\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response is for the order that was placed\", function () {",
+                  "    pm.expect(pm.response.json().orderId).to.eql(pm.collectionVariables.get(\"lastOrderId\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Last updated time was recorded\", function () {",
+                  "    pm.expect(pm.response.json().lastUpdatedAt).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{lastOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{lastOrderId}}"
+              ]
+            },
+            "description": "Confirms the final status was saved in the Orders table."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order Status — Set Directly",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Order status was set to Ready\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"Ready\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{secondOrderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{secondOrderId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Ready\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Sets the second order's status to a specific value instead of moving one step."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array of orders\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "pm.test(\"Both orders placed in this run are listed\", function () {",
+                  "    const ids = pm.response.json().map(o => o.orderId);",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get(\"lastOrderId\"));",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get(\"secondOrderId\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
           },
           "response": []
         }
@@ -1175,6 +1773,10 @@
   "variable": [
     {
       "key": "lastOrderId",
+      "value": ""
+    },
+    {
+      "key": "secondOrderId",
       "value": ""
     }
   ]

@@ -94,7 +94,7 @@ namespace CoffeeNChill.Functions.Functions
         }
 
         /// <summary>
-        /// PUT /api/orders/{orderId}/status - Updates an order's status.
+        /// PUT /api/orders/{orderId}/status - Updates an order's status to a specific value.
         /// Body must contain: { "status": "Preparing" | "Ready" | "Collected" }.
         /// </summary>
         [Function("UpdateOrderStatus")]
@@ -143,6 +143,87 @@ namespace CoffeeNChill.Functions.Functions
             }
         }
 
+        /// <summary>
+        /// PUT /api/orders/status - Moves an order one step forward in the lifecycle.
+        /// Request body must contain: { "orderId": "ORD-2026-8801" }.
+        ///
+        /// Status progression:
+        ///   Received  → Preparing
+        ///   Preparing → Ready
+        ///   Ready     → Collected
+        ///   Collected → (no further transitions - returns an error)
+        /// </summary>
+        [Function("AdvanceOrderStatus")]
+        public async Task<HttpResponseData> AdvanceOrderStatus(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "orders/status")] HttpRequestData req)
+        {
+            try
+            {
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var body = JsonSerializer.Deserialize<AdvanceStatusRequest>(requestBody, _jsonOptions);
+
+                if (body == null || string.IsNullOrWhiteSpace(body.OrderId))
+                {
+                    return await CreateBadResponse(req, "orderId field is required.");
+                }
+
+                // Fetch the current order
+                var existing = await _orderStorage.GetOrderByIdAsync(body.OrderId);
+                if (existing == null)
+                {
+                    return await CreateNotFoundResponse(req, $"Order '{body.OrderId}' not found.");
+                }
+
+                // Determine the current status
+                if (!Enum.TryParse<OrderStatus>(existing.Status, ignoreCase: true, out var currentStatus))
+                {
+                    return await CreateBadResponse(req,
+                        $"Order has an unknown status '{existing.Status}'.");
+                }
+
+                if (currentStatus == OrderStatus.Collected)
+                {
+                    return await CreateBadResponse(req,
+                        $"Order '{body.OrderId}' is already Collected and cannot be advanced further.");
+                }
+
+                // Move one step forward
+                OrderStatus nextStatus = currentStatus switch
+                {
+                    OrderStatus.Received => OrderStatus.Preparing,
+                    OrderStatus.Preparing => OrderStatus.Ready,
+                    OrderStatus.Ready => OrderStatus.Collected,
+                    _ => currentStatus
+                };
+
+                var updated = await _orderStorage.UpdateOrderStatusAsync(body.OrderId, nextStatus);
+                if (updated == null)
+                {
+                    return await CreateNotFoundResponse(req, $"Order '{body.OrderId}' not found.");
+                }
+
+                _logger.LogInformation(
+                    "Order {OrderId} advanced from {OldStatus} to {NewStatus}.",
+                    body.OrderId, currentStatus, nextStatus);
+
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                string json = JsonSerializer.Serialize(updated, _jsonOptions);
+                await response.WriteStringAsync(json, Encoding.UTF8);
+                response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+                return response;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Invalid JSON in advance status request.");
+                return await CreateBadResponse(req, "Invalid JSON format.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error advancing status for order.");
+                return await CreateErrorResponse(req);
+            }
+        }
+
         // ==== Helper response methods ====
 
         private async Task<HttpResponseData> CreateBadResponse(HttpRequestData req, string message)
@@ -175,10 +256,18 @@ namespace CoffeeNChill.Functions.Functions
     }
 
     /// <summary>
-    /// Request body for updating order status.
+    /// Request body for updating an order's status to a specific value.
     /// </summary>
     public class UpdateStatusRequest
     {
         public string Status { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Request body for advancing an order one step forward in its lifecycle.
+    /// </summary>
+    public class AdvanceStatusRequest
+    {
+        public string OrderId { get; set; } = string.Empty;
     }
 }

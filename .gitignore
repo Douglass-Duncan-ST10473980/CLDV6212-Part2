@@ -35,16 +35,6 @@ _ReSharper.Caches/
 # Azure Functions local settings
 # May contain local secrets and must not be committed
 
-
-# Keep the safe configuration template
-!**/local.settings.example.json
-
-# Environment and secret files
-.env
-.env.*
-!.env.example
-*.secrets.json
-
 # Azurite local database and storage files
 __azurite_db*
 __blobstorage__/
@@ -107,10 +97,6 @@ docker-compose.override.yml
 # .NET build output anywhere in the repository
 **/bin/
 **/obj/
-
-# Azure Functions private local settings
-**/local.settings.json
-!**/local.settings.example.json
 
 # macOS files
 .DS_Store

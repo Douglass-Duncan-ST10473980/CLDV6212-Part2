@@ -1,0 +1,61 @@
+# Author: Tahir Ismail
+# CoffeeNChill - Part 2 local orchestration.
+# Starts Azurite (local Azure Storage emulator) and the Azure Functions host together
+# with one command: docker-compose up
+# The Functions image is pulled from Docker Hub (not built locally), as required by the PoE.
+
+services:
+
+  # Azurite emulates Azure Blob, Queue and Table storage locally.
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: coffeenchill-azurite
+    # Bind to 0.0.0.0 so other containers on the network can reach Azurite,
+    # and store data in /data so it survives container restarts (see volume below).
+    command: >
+      azurite
+      --blobHost 0.0.0.0
+      --queueHost 0.0.0.0
+      --tableHost 0.0.0.0
+      --location /data
+      --loose
+      --skipApiVersionCheck
+    ports:
+      - "10000:10000" # Blob
+      - "10001:10001" # Queue
+      - "10002:10002" # Table
+    volumes:
+      - azurite-data:/data
+    networks:
+      - coffeenchill-network
+    restart: unless-stopped
+
+  # Azure Functions host running our HTTP and Queue triggered functions.
+  functions:
+    image: tahirismail/coffeenchill-functions:v2.0
+    container_name: coffeenchill-functions
+    ports:
+      - "7071:80" # Functions base image listens on port 80 inside the container
+    environment:
+      # UseDevelopmentStorage=true only works on the same machine, not between containers.
+      # This full connection string points at the "azurite" service name on the Docker network.
+      # The account key below is Azurite's public, well-known development key (not a secret).
+      AzureWebJobsStorage: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+      FUNCTIONS_WORKER_RUNTIME: "dotnet-isolated"
+      # Real Azure Storage account for the staff-docs File Share (Azurite has no File Share support).
+      # The value is read from the .env file, which is never committed to GitHub.
+      FileShareStorage: "${FileShareStorage}"
+    depends_on:
+      - azurite
+    networks:
+      - coffeenchill-network
+    restart: unless-stopped
+
+# Named volume so Azurite's tables, queues and blobs persist between runs.
+volumes:
+  azurite-data:
+
+# Custom bridge network so the containers can find each other by service name.
+networks:
+  coffeenchill-network:
+    driver: bridge

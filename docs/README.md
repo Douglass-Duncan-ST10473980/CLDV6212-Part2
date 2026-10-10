@@ -219,6 +219,9 @@ docs/
 Each member must review this section and correct any inaccurate details before submission.
 
 ## Verified Git commit history
+| Neha — ST10478910 | nehaheeralal | 22 | [Neha Commits](https://github.com/EMGPSD/cldv6212-g2-2026-poe-part1-douglass-duncan-st10473980/commits/main/?author=nehaheeralal) |
+| Tahir — ST10471483 | tahir2404 | 14 | [Tahirs Commits](https://github.com/EMGPSD/cldv6212-g2-2026-poe-part1-douglass-duncan-st10473980/commits/main/?author=tahir2404) |
+| Douglass — ST10473980 | Douglass-Duncan-ST10473980 | 7 | [Douglass' Commits](https://github.com/EMGPSD/cldv6212-g2-2026-poe-part1-douglass-duncan-st10473980/commits/main/?author=Douglass-Duncan-ST10473980) |
 
 The POE requires at least five meaningful commits per student. GitHub's **Commits** and **Contributors** views are the source of truth.
 

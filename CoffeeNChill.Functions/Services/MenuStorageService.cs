@@ -201,5 +201,36 @@ namespace CoffeeNChill.Functions.Services
                 throw;
             }
         }
+        
+        /// <summary>
+        /// Retrieves a menu item from Azure Table Storage using its unique SKU.
+        /// </summary>
+        /// <param name="sku">
+        /// The SKU of the menu item to retrieve. The value is trimmed and converted
+        /// to uppercase before the table is queried.
+        /// </param>
+        /// <returns>
+        /// A task representing the asynchronous operation. The task result contains
+        /// the matching <see cref="MenuItem"/> when found; otherwise, <see langword="null"/>.
+        /// </returns>
+        /// <remarks>
+        /// This method queries the table using the SKU stored as the entity's
+        /// <c>RowKey</c>. Menu-item SKUs should therefore be unique across all
+        /// table partitions.
+        /// <para>Author: Douglass Duncan — ST10473980</para>
+        /// </remarks>
+        public async Task<MenuItem?> GetMenuItemBySkuAsync(string sku)
+        {
+            string normalizedSku = sku.Trim().ToUpperInvariant();
+
+            await foreach (MenuItem item in _tableClient.QueryAsync<MenuItem>(
+                               item => item.RowKey == normalizedSku,
+                               maxPerPage: 1))
+            {
+                return item;
+            }
+
+            return null;
+        }
     }
 }

@@ -32,9 +32,6 @@ _ReSharper.Caches/
 .vscode/
 .history/
 
-# Azure Functions local settings
-# May contain local secrets and must not be committed
-
 # Azurite local database and storage files
 __azurite_db*
 __blobstorage__/

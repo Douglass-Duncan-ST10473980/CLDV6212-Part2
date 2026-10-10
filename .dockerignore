@@ -1,5 +1,4 @@
 **/.dockerignore
-**/.env
 **/.git
 **/.gitignore
 **/.project
@@ -21,6 +20,5 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
-**/local.settings.json
 LICENSE
 README.md

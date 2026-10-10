@@ -100,7 +100,7 @@ namespace CoffeeNChill.Functions.Functions
                 OrderId = orderMessage.OrderId,
                 CustomerName = orderMessage.CustomerName.Trim(),
                 SelectedItemSKUs = string.Join(",", orderMessage.SelectedItemSKUs),
-                TotalPrice = orderMessage.TotalPrice,
+                TotalPrice = (double)orderMessage.TotalPrice,
                 Status = OrderStatus.Received.ToString(),
                 OrderTimestamp = orderMessage.OrderTimestamp,
                 ReceivedAt = DateTime.UtcNow,

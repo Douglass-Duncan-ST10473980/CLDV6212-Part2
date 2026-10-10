@@ -47,8 +47,7 @@ namespace CoffeeNChill.Functions.Models
         /// <summary>
         /// Total price of the order.
         /// </summary>
-        public decimal TotalPrice { get; set; }
-
+        public double TotalPrice { get; set; }
         /// <summary>
         /// Current status of the order: Received, Preparing, Ready, or Collected.
         /// </summary>

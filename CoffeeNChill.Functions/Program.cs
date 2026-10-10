@@ -1,6 +1,5 @@
-// Authors: Tahir Ismail, Douglass Duncan (ST10473980), Neha
+// Authors: Tahir Ismail (ST10471483), Douglass Duncan (ST10473980), Neha Heeralal (ST10478910)
 
-//Author: Tahir Ismail , Douglass Duncan, Neha Heeralal
 using Azure.Monitor.OpenTelemetry.Exporter;
 using CoffeeNChill.Functions.Services;
 using Microsoft.Azure.Functions.Worker;
@@ -53,7 +52,5 @@ if (!string.IsNullOrEmpty(
         .UseAzureMonitorExporter();
 }
 
-
-builder.ConfigureFunctionsWebApplication();
 
 builder.Build().Run();

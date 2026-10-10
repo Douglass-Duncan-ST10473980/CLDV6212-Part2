@@ -32,7 +32,7 @@ services:
 
   # Azure Functions host running our HTTP and Queue triggered functions.
   functions:
-    image: st10471483/coffeenchill-functions:v2.0
+    image: tahirismail/coffeenchill-functions:v2.0
     container_name: coffeenchill-functions
     ports:
       - "7071:80" # Functions base image listens on port 80 inside the container

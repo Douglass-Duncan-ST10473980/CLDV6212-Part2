@@ -17,9 +17,9 @@ namespace CoffeeNChill.Functions.Functions;
 /// <remarks>
 /// Owner: Douglass Duncan — ST10473980
 /// </remarks>
-public class OrderQueueFunction
+public class OrderQueueProducer
 {
-    private readonly ILogger<OrderQueueFunction> _logger;
+    private readonly ILogger<OrderQueueProducer> _logger;
     private readonly OrderQueueService _orderQueueService;
     private readonly MenuStorageService _menuStorageService;
 
@@ -30,7 +30,7 @@ public class OrderQueueFunction
     };
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OrderQueueFunction"/> class.
+    /// Initializes a new instance of the <see cref="OrderQueueProducer"/> class.
     /// </summary>
     /// <param name="menuStorageService">
     /// The service used to retrieve menu-item information.
@@ -41,9 +41,9 @@ public class OrderQueueFunction
     /// <param name="orderQueueService">
     /// The service used to submit completed orders to Azure Queue Storage.
     /// </param>
-    public OrderQueueFunction(
+    public OrderQueueProducer(
         MenuStorageService menuStorageService,
-        ILogger<OrderQueueFunction> logger,
+        ILogger<OrderQueueProducer> logger,
         OrderQueueService orderQueueService)
     {
         _menuStorageService = menuStorageService;

@@ -404,7 +404,7 @@ Each team member must confirm that their listed contributions are accurate befor
 Unlisted YouTube video:
 
 ```text
-<ADD_PART_2_UNLISTED_YOUTUBE_URL>
+https://youtu.be/msGuSvtPuLs
 ```
 
 The video demonstrates:
